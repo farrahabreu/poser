@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POSER — Audio Review Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwindcss.config = {
+      theme: {
+        extend: {
+          colors: {
+            neon: '#39FF14',
+            hotpink: '#FF1493',
+            vivid: '#8B5CF6',
+            deep: '#0a0a0a',
+            cinema: '#FF1493',
+            music: '#39FF14',
+            fashion: '#8B5CF6',
+            literature: '#B8001C',
+          },
+        },
+      },
+    }
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #fff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #39FF14; border-radius: 3px; }
+
+    @keyframes waveform { 0%,100% { height: 8px; } 50% { height: var(--max-h, 24px); } }
+    @keyframes pulse-ring { 0%,100% { box-shadow: 0 0 0 0 rgba(255,20,20,0.4); } 50% { box-shadow: 0 0 0 12px rgba(255,20,20,0); } }
+    @keyframes fade-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    @keyframes recording-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes slide-up { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+    .gradient-text { background: linear-gradient(135deg, #39FF14, #FF1493, #8B5CF6, #39FF14); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 300% 300%; animation: gradient-shift 4s ease infinite; }
+    .glass { background: rgba(255,255,255,0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.06); }
+    .card-hover { transition: all 0.3s ease; }
+    .card-hover:hover { transform: translateY(-2px); border-color: rgba(57,255,20,0.2); }
+
+    /* Profile rings using updated pillar colors */
+    .profile-ring { padding: 2.5px; border-radius: 50%; }
+    .ring-music-cinema  { background: conic-gradient(#39FF14 0deg 180deg, #FF1493 180deg 360deg); }
+    .ring-fashion-cinema{ background: conic-gradient(#8B5CF6 0deg 180deg, #FF1493 180deg 360deg); }
+    .ring-lit-music     { background: conic-gradient(#B8001C 0deg 180deg, #39FF14 180deg 360deg); }
+    .ring-cinema-lit    { background: conic-gradient(#FF1493 0deg 180deg, #B8001C 180deg 360deg); }
+    .ring-music-fashion { background: conic-gradient(#39FF14 0deg 180deg, #8B5CF6 180deg 360deg); }
+    .ring-all           { background: conic-gradient(#FF1493 0deg 90deg, #39FF14 90deg 180deg, #8B5CF6 180deg 270deg, #B8001C 270deg 360deg); }
+
+    .wave-bar { border-radius: 2px; transition: height 0.15s ease; }
+    .wave-bar-animated { animation: waveform 0.8s ease-in-out infinite; }
+
+    .rating-sq { width: 9px; height: 9px; display: inline-block; margin-right: 2px; border-radius: 1px; }
+
+    .section-reveal { opacity: 0; transform: translateY(24px); transition: all 0.6s ease; }
+    .section-reveal.visible { opacity: 1; transform: translateY(0); }
+
+    .tab-active { color: #39FF14; border-bottom: 2px solid #39FF14; }
+    .mini-player { animation: slide-up 0.3s ease forwards; }
+    .recording-ring { animation: pulse-ring 1.5s ease-in-out infinite; }
+    .recording-dot { animation: recording-pulse 1s ease-in-out infinite; }
+
+    .thread-line { position: absolute; left: 19px; top: 48px; bottom: 0; width: 2px; }
+    .transcript-line:hover { background: rgba(57,255,20,0.05); cursor: pointer; }
+
+    .nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 1px; background: #39FF14; transition: width 0.3s; }
+    .nav-link:hover::after { width: 100%; }
+    .nav-link { position: relative; }
+
+    .speed-btn { transition: all 0.2s; }
+    .speed-btn.active, .speed-btn:hover { color: #39FF14; border-color: rgba(57,255,20,0.5); }
+
+    .timestamp-marker { position: absolute; top: -4px; width: 8px; height: 8px; border-radius: 50%; cursor: pointer; transform: translateX(-50%); transition: all 0.2s; z-index: 5; }
+    .timestamp-marker:hover { transform: translateX(-50%) scale(1.5); }
+    .comment-timestamp { cursor: pointer; transition: color 0.2s; font-family: 'Source Code Pro', monospace; }
+    .comment-timestamp:hover { color: #39FF14; }
+
+    /* Left stroke by pillar */
+    .post-cinema    { border-left: 3px solid #FF1493; }
+    .post-music     { border-left: 3px solid #39FF14; }
+    .post-fashion   { border-left: 3px solid #8B5CF6; }
+    .post-literature{ border-left: 3px solid #B8001C; }
+
+    .filter-pill { transition: all 0.2s; cursor: pointer; user-select: none; }
+    .filter-pill.active  { opacity: 1; }
+    .filter-pill.inactive{ opacity: 0.35; }
+    .mutual-badge { font-size: 9px; color: #666; font-style: italic; }
+    .bookmark-ts { cursor: pointer; transition: all 0.2s; font-size: 9px; }
+    .bookmark-ts:hover { color: #39FF14; }
+    .caught-up { text-align: center; padding: 40px 20px; }
+    code, .mono { font-family: 'Source Code Pro', monospace; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="fixed top-0 w-full z-50 border-b border-white/5" style="background:#09090f;">
+  <div class="max-w-4xl mx-auto px-4 md:px-6 py-3.5 flex items-center justify-between">
+    <a href="index.html" style="display:inline-flex;align-items:center;text-decoration:none;"><img src="logo.png" alt="POSER" style="height:28px;width:auto;display:block;" /></a>
+    <div class="flex items-center gap-4">
+      <!-- Notification bell -->
+      <button class="relative text-gray-400 hover:text-white transition">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-bold text-white" style="background:#FF1493">3</span>
+      </button>
+      <button id="open-record-modal" class="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-widest text-black hover:bg-white transition-colors" style="background:#39FF14">
+        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3z"/><path d="M17 12c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-2.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
+        Record
+      </button>
+      <div class="ring-all profile-ring w-8 h-8">
+        <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[9px] font-bold">FA</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- FEED TABS + FILTERS -->
+<div class="pt-20 pb-0 px-4 md:px-6 max-w-4xl mx-auto">
+  <div class="flex flex-col sm:flex-row sm:items-center gap-0 border-b border-white/5">
+    <div class="flex items-center gap-6">
+      <button class="tab-active pb-3 text-sm font-medium tracking-wide" onclick="switchTab(this)">Following</button>
+      <button class="pb-3 text-sm font-medium tracking-wide text-gray-500 hover:text-gray-300 transition" onclick="switchTab(this)">Explore</button>
+      <button class="pb-3 text-sm font-medium tracking-wide text-gray-500 hover:text-gray-300 transition" onclick="switchTab(this)">Trending</button>
+    </div>
+    <div class="sm:ml-auto flex items-center gap-2 pb-3">
+      <span class="text-[9px] text-gray-600 mono">filter:</span>
+      <button class="filter-pill active text-[10px] border rounded px-2.5 py-1 mono" style="color:#FF1493;border-color:rgba(255,20,147,0.3)" onclick="toggleFilter(this,'cinema')">Cinema</button>
+      <button class="filter-pill active text-[10px] border rounded px-2.5 py-1 mono" style="color:#39FF14;border-color:rgba(57,255,20,0.3)" onclick="toggleFilter(this,'music')">Music</button>
+      <button class="filter-pill active text-[10px] border rounded px-2.5 py-1 mono" style="color:#8B5CF6;border-color:rgba(139,92,246,0.3)" onclick="toggleFilter(this,'fashion')">Fashion</button>
+      <button class="filter-pill active text-[10px] border rounded px-2.5 py-1 mono" style="color:#B8001C;border-color:rgba(184,0,28,0.3)" onclick="toggleFilter(this,'literature')">Literature</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN FEED -->
+<main id="feed" class="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-6 pb-32">
+
+  <!-- POST 1: dante.vinyl — Elvis '68 (MUSIC / AUDIO) -->
+  <article class="glass rounded-2xl overflow-hidden section-reveal post-music" data-pillar="music">
+    <div class="p-5 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="ring-music-cinema profile-ring w-10 h-10">
+            <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[10px] font-bold">DV</div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold">dante.vinyl</span>
+              <span class="text-[9px] text-gray-600">4h ago</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="mono text-[9px] tracking-wider px-1.5 py-0.5 border rounded" style="color:#39FF14;border-color:rgba(57,255,20,0.2)">MUSIC</span>
+              <span class="text-[9px] text-gray-600">Insight: 92</span>
+              <span class="mutual-badge">Followed by Farrah.Abreu</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button class="text-gray-500 hover:text-neon transition" title="Subscribe for every post" onclick="this.style.color='#39FF14'">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          </button>
+          <button class="text-gray-600 hover:text-white">
+            <svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <h2 class="text-xl md:text-2xl font-bold mb-1">Elvis Presley — '68 Comeback Special</h2>
+      <p class="text-gray-400 text-sm italic mb-3">The performance that proved a king doesn't need a throne</p>
+      <div class="flex items-center gap-1 mb-2">
+        <div class="rating-sq" style="background:#39FF14"></div>
+        <div class="rating-sq" style="background:#39FF14"></div>
+        <div class="rating-sq" style="background:#39FF14"></div>
+        <div class="rating-sq" style="background:#39FF14"></div>
+        <div class="rating-sq" style="background:#39FF14"></div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(57,255,20,0.6);background:rgba(57,255,20,0.05)">#elvis</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(57,255,20,0.6);background:rgba(57,255,20,0.05)">#comeback</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(57,255,20,0.6);background:rgba(57,255,20,0.05)">#liveshows</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(57,255,20,0.6);background:rgba(57,255,20,0.05)">#1968</span>
+      </div>
+
+      <!-- Audio Player -->
+      <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-4">
+          <button class="play-btn w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform" style="background:#39FF14" data-audio="1">
+            <svg class="play-icon" width="14" height="14" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            <svg class="pause-icon hidden" width="14" height="14" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <div class="flex-1">
+            <div class="waveform relative flex items-end gap-[2px] h-8 cursor-pointer" data-audio="1">
+              <div class="absolute inset-0 flex items-end gap-[2px]" id="waveform-1"></div>
+              <div class="timestamp-marker" style="left:15%;background:#8B5CF6" title="@kai.jsx at 0:42"></div>
+              <div class="timestamp-marker" style="left:38%;background:#FF1493" title="@raya.m at 1:47"></div>
+              <div class="timestamp-marker" style="left:72%;background:#8B5CF6" title="@suki.knit at 3:24"></div>
+              <div class="timestamp-marker" style="left:55%;background:rgba(57,255,20,0.5);width:7px;height:7px;border:1px solid #39FF14" title="Your bookmark"></div>
+            </div>
+            <div class="flex justify-between mt-1.5">
+              <span class="mono text-[10px] text-gray-500">0:00</span>
+              <span class="mono text-[10px] text-gray-500">4:47</span>
+            </div>
+          </div>
+          <div class="flex flex-col items-end gap-2">
+            <div class="flex gap-1">
+              <button class="speed-btn mono text-[9px] text-gray-400 border border-white/10 rounded px-1.5 py-0.5">0.75x</button>
+              <button class="speed-btn active mono text-[9px] border rounded px-1.5 py-0.5" style="color:#39FF14;border-color:rgba(57,255,20,0.5)">1x</button>
+              <button class="speed-btn mono text-[9px] text-gray-400 border border-white/10 rounded px-1.5 py-0.5">1.25x</button>
+              <button class="speed-btn mono text-[9px] text-gray-400 border border-white/10 rounded px-1.5 py-0.5">1.5x</button>
+            </div>
+            <button class="bookmark-ts text-gray-500 flex items-center gap-1 hover:text-neon">
+              <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+              <span>Bookmark moment</span>
+            </button>
+          </div>
+        </div>
+        <p class="text-[11px] text-gray-500 mt-3 italic">"If you think you know Elvis from the movies, you don't know Elvis."</p>
+      </div>
+
+      <!-- Transcript -->
+      <details class="mb-4">
+        <summary class="mono text-[11px] text-gray-500 cursor-pointer hover:text-neon transition flex items-center gap-1.5">
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+          Show Transcript
+        </summary>
+        <div class="mt-3 rounded-lg p-4 space-y-2 text-[11px] text-gray-500" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)">
+          <div class="transcript-line flex gap-3 rounded px-2 py-1">
+            <span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(57,255,20,0.5)">0:00</span>
+            <span>There's this moment right at the beginning where Elvis walks out in that black leather suit, and the audience just... stops breathing.</span>
+          </div>
+          <div class="transcript-line flex gap-3 rounded px-2 py-1">
+            <span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(57,255,20,0.5)">0:18</span>
+            <span>By 1968, Elvis had been making formulaic Hollywood movies for almost a decade. The music industry had moved on. The Beatles happened. Hendrix happened.</span>
+          </div>
+          <div class="transcript-line flex gap-3 rounded px-2 py-1">
+            <span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(57,255,20,0.5)">0:42</span>
+            <span>What kills me is the intimacy of it. It's not a stadium. It's a small stage, almost in-the-round. He's not performing at them. He's performing with them.</span>
+          </div>
+          <div class="transcript-line flex gap-3 rounded px-2 py-1">
+            <span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(57,255,20,0.5)">1:47</span>
+            <span>And then "If I Can Dream." The way his voice breaks. In 1968. After MLK. After Bobby Kennedy. This wasn't just a comeback -- it was a man pouring everything into a moment because the world was falling apart.</span>
+          </div>
+          <div class="transcript-line flex gap-3 rounded px-2 py-1">
+            <span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(57,255,20,0.5)">3:24</span>
+            <span>This was Elvis saying "I know you forgot about me. Watch this." There's no safety net. That's what makes it transcend time.</span>
+          </div>
+        </div>
+      </details>
+
+      <!-- Engagement -->
+      <div class="flex items-center justify-between pt-3" style="border-top:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-5">
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white transition" onclick="toggleLike(this,347)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+            <span class="text-[11px]">347</span>
+          </button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white transition">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <span class="text-[11px]">12</span>
+          </button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white transition">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
+            <span class="text-[11px]">56</span>
+          </button>
+          <button class="text-gray-500 hover:text-white">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-[9px] text-gray-600 italic">Liked by <span class="text-gray-400">Farrah.Abreu</span></span>
+          <button class="text-gray-500 hover:text-neon">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- THREAD -->
+    <div style="border-top:1px solid rgba(255,255,255,0.05)" class="px-5 md:px-6 py-4 space-y-4">
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center gap-3">
+          <span class="text-[11px] text-gray-500">12 comments &middot; 4 audio replies</span>
+          <button class="mono text-[9px] flex items-center gap-1 hover:text-neon transition" style="color:rgba(57,255,20,0.6)">
+            <svg width="10" height="10" fill="#39FF14" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            Play thread
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="mono text-[10px] text-neon" style="border-bottom:1px solid rgba(57,255,20,0.3)">By timestamp</button>
+          <button class="mono text-[10px] text-gray-600 hover:text-gray-400">Recent</button>
+        </div>
+      </div>
+
+      <!-- Comment: kai.jsx @ 0:42 audio -->
+      <div class="relative">
+        <div class="thread-line" style="background:rgba(255,20,147,0.15)"></div>
+        <div class="flex gap-3">
+          <div class="ring-cinema-lit profile-ring w-8 h-8 flex-shrink-0 z-10">
+            <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[8px] font-bold">KJ</div>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+              <span class="text-xs font-semibold">kai.jsx</span>
+              <span class="comment-timestamp text-[9px]" style="color:rgba(139,92,246,0.7)">@ 0:42</span>
+              <span class="text-[9px] text-gray-600">3h ago</span>
+              <span class="mutual-badge">Followed by raya.m</span>
+            </div>
+            <div class="rounded-lg p-3 mb-2" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+              <div class="flex items-center gap-3">
+                <button class="play-btn w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:#FF1493" data-audio="r1">
+                  <svg class="play-icon" width="9" height="9" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                  <svg class="pause-icon hidden" width="9" height="9" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <div class="flex-1"><div class="flex items-end gap-[1.5px] h-5" id="wv-r1"></div></div>
+                <span class="mono text-[9px] text-gray-500">1:12</span>
+              </div>
+              <p class="text-[10px] text-gray-500 mt-2 italic">"The intimacy point is everything. Binder shot this like Cassavetes -- handheld energy, faces over spectacle."</p>
+            </div>
+            <!-- Level 2: dante replies -->
+            <div class="ml-8 flex gap-2.5 mb-2">
+              <div class="ring-music-cinema profile-ring w-6 h-6 flex-shrink-0">
+                <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[7px] font-bold">DV</div>
+              </div>
+              <div>
+                <div class="flex items-center gap-2 mb-0.5"><span class="text-[11px] font-semibold">dante.vinyl</span><span class="text-[9px] text-gray-600">2h ago</span></div>
+                <p class="text-[11px] text-gray-400">Cassavetes comparison is spot on. The camera itself isn't sure what's going to happen next.</p>
+              </div>
+            </div>
+            <!-- Level 3: kai again -->
+            <div class="ml-16 flex gap-2.5">
+              <div class="ring-cinema-lit profile-ring w-6 h-6 flex-shrink-0">
+                <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[7px] font-bold">KJ</div>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-[11px] font-semibold">kai.jsx</span>
+                  <span class="text-[9px] text-gray-600">1h ago</span>
+                  <span class="mono text-[8px] text-gray-700">[max depth]</span>
+                </div>
+                <div class="rounded-lg p-2.5" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+                  <div class="flex items-center gap-2">
+                    <button class="play-btn w-6 h-6 rounded-full flex items-center justify-center" style="background:#FF1493" data-audio="r1b">
+                      <svg class="play-icon" width="8" height="8" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                      <svg class="pause-icon hidden" width="8" height="8" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </button>
+                    <div class="flex-1"><div class="flex items-end gap-[1.5px] h-4" id="wv-r1b"></div></div>
+                    <span class="mono text-[8px] text-gray-500">0:34</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comment: raya.m @ 1:47 audio -->
+      <div class="relative">
+        <div class="thread-line" style="background:rgba(255,20,147,0.15)"></div>
+        <div class="flex gap-3">
+          <div class="ring-music-fashion profile-ring w-8 h-8 flex-shrink-0 z-10">
+            <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[8px] font-bold">RM</div>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1.5">
+              <span class="text-xs font-semibold">raya.m</span>
+              <span class="comment-timestamp text-[9px]" style="color:rgba(255,20,147,0.7)">@ 1:47</span>
+              <span class="text-[9px] text-gray-600">2h ago</span>
+            </div>
+            <div class="rounded-lg p-3 mb-2" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+              <div class="flex items-center gap-3">
+                <button class="play-btn w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:#FF1493" data-audio="r2">
+                  <svg class="play-icon" width="9" height="9" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                  <svg class="pause-icon hidden" width="9" height="9" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <div class="flex-1"><div class="flex items-end gap-[1.5px] h-5" id="wv-r2"></div></div>
+                <span class="mono text-[9px] text-gray-500">0:48</span>
+              </div>
+              <p class="text-[10px] text-gray-500 mt-2 italic">"That leather suit IS the comeback. The fashion IS the statement. He looked like he was going to war."</p>
+            </div>
+            <!-- suki replies -->
+            <div class="ml-8 flex gap-2.5">
+              <div class="ring-fashion-cinema profile-ring w-6 h-6 flex-shrink-0">
+                <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[7px] font-bold">SK</div>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1"><span class="text-[11px] font-semibold">suki.knit</span><span class="text-[9px] text-gray-600">1h ago</span></div>
+                <div class="rounded-lg p-2.5" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+                  <div class="flex items-center gap-2">
+                    <button class="play-btn w-6 h-6 rounded-full flex items-center justify-center" style="background:#8B5CF6" data-audio="r3">
+                      <svg class="play-icon" width="8" height="8" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                      <svg class="pause-icon hidden" width="8" height="8" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </button>
+                    <div class="flex-1"><div class="flex items-end gap-[1.5px] h-4" id="wv-r3"></div></div>
+                    <span class="mono text-[8px] text-gray-500">1:33</span>
+                  </div>
+                  <p class="text-[9px] text-gray-500 mt-1.5 italic">"Bill Belew designed that suit. Napoleon collar, perfect fit -- military precision meets rebellion. That silhouette is still referenced every fashion week."</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comment: mina.lit text @ 3:24 -->
+      <div class="flex gap-3">
+        <div class="ring-lit-music profile-ring w-8 h-8 flex-shrink-0">
+          <div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[8px] font-bold">ML</div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="text-xs font-semibold">mina.lit</span>
+            <span class="comment-timestamp text-[9px]" style="color:rgba(184,0,28,0.7)">@ 3:24</span>
+            <span class="text-[9px] text-gray-600">45m ago</span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">"The thing that made you special is still there. It always was." -- This is the thesis of every artist who goes quiet and then returns to the thing that made them real. Sylvia Plath wrote about the same thing.</p>
+        </div>
+      </div>
+
+      <!-- Reply input -->
+      <div class="flex items-center gap-3 pt-2">
+        <div class="ring-all profile-ring w-7 h-7 flex-shrink-0"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[7px] font-bold">FA</div></div>
+        <button class="flex-1 rounded-lg px-4 py-2.5 text-left text-[11px] text-gray-600 flex items-center gap-2 hover:border-neon/20 transition" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+          <svg width="12" height="12" fill="none" stroke="#39FF14" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 15c1.66 0 3-1.34 3-3V6c0-1.66-1.34-3-3-3S9 4.34 9 6v6c0 1.66 1.34 3 3 3z"/></svg>
+          Reply with audio or text...
+        </button>
+      </div>
+    </div>
+  </article>
+
+
+  <!-- POST 2: suki.knit — McQueen VOSS (FASHION / AUDIO) -->
+  <article class="glass rounded-2xl overflow-hidden section-reveal post-fashion" data-pillar="fashion">
+    <div class="p-5 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="ring-fashion-cinema profile-ring w-10 h-10"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[10px] font-bold">SK</div></div>
+          <div>
+            <div class="flex items-center gap-2"><span class="text-sm font-semibold">suki.knit</span><span class="text-[9px] text-gray-600">8h ago</span></div>
+            <div class="flex items-center gap-2">
+              <span class="mono text-[9px] tracking-wider px-1.5 py-0.5 border rounded" style="color:#8B5CF6;border-color:rgba(139,92,246,0.2)">FASHION</span>
+              <span class="text-[9px] text-gray-600">Insight: 87</span>
+              <span class="mutual-badge">Followed by dante.vinyl</span>
+            </div>
+          </div>
+        </div>
+        <button class="text-gray-600 hover:text-white"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+      </div>
+      <h2 class="text-xl md:text-2xl font-bold mb-1">Alexander McQueen — VOSS SS 2001</h2>
+      <p class="text-gray-400 text-sm italic mb-3">The show that made an audience confront their own gaze</p>
+      <div class="flex items-center gap-1 mb-2">
+        <div class="rating-sq" style="background:#8B5CF6"></div><div class="rating-sq" style="background:#8B5CF6"></div><div class="rating-sq" style="background:#8B5CF6"></div><div class="rating-sq" style="background:#8B5CF6"></div><div class="rating-sq" style="background:#8B5CF6"></div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(139,92,246,0.6);background:rgba(139,92,246,0.05)">#mcqueen</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(139,92,246,0.6);background:rgba(139,92,246,0.05)">#voss</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(139,92,246,0.6);background:rgba(139,92,246,0.05)">#runway</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(139,92,246,0.6);background:rgba(139,92,246,0.05)">#performanceart</span>
+      </div>
+      <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-4">
+          <button class="play-btn w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform" style="background:#8B5CF6" data-audio="2">
+            <svg class="play-icon" width="14" height="14" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            <svg class="pause-icon hidden" width="14" height="14" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <div class="flex-1">
+            <div class="waveform relative flex items-end gap-[2px] h-8 cursor-pointer" data-audio="2">
+              <div class="absolute inset-0 flex items-end gap-[2px]" id="waveform-2"></div>
+            </div>
+            <div class="flex justify-between mt-1.5">
+              <span class="mono text-[10px] text-gray-500">0:00</span>
+              <span class="mono text-[10px] text-gray-500">6:12</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-gray-500 mt-3 italic">"VOSS wasn't a fashion show. It was a psychiatric event disguised as a runway."</p>
+      </div>
+      <details class="mb-4">
+        <summary class="mono text-[11px] text-gray-500 cursor-pointer hover:text-neon flex items-center gap-1.5">
+          <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+          Show Transcript
+        </summary>
+        <div class="mt-3 rounded-lg p-4 space-y-2 text-[11px] text-gray-500" style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05)">
+          <div class="transcript-line flex gap-3 rounded px-2 py-1"><span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(139,92,246,0.5)">0:00</span><span>Imagine you're sitting in this venue and the entire stage is a giant mirrored box. You can't see inside. But you can see yourself.</span></div>
+          <div class="transcript-line flex gap-3 rounded px-2 py-1"><span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(139,92,246,0.5)">0:28</span><span>When the mirrors finally became transparent -- one-way glass -- you could see the models inside. But the question is: who was the exhibit?</span></div>
+          <div class="transcript-line flex gap-3 rounded px-2 py-1"><span class="comment-timestamp w-10 flex-shrink-0" style="color:rgba(139,92,246,0.5)">1:48</span><span>The finale. The box shatters -- and in the center, Michelle Olley, connected to a breathing apparatus, surrounded by moths. Joel-Peter Witkin's "Sanitarium" in real time.</span></div>
+        </div>
+      </details>
+      <div class="flex items-center justify-between pt-3" style="border-top:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-5">
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white" onclick="toggleLike(this,518)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="text-[11px]">518</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="text-[11px]">8</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg><span class="text-[11px]">97</span></button>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-[9px] text-gray-600 italic">Liked by <span class="text-gray-400">raya.m</span></span>
+          <button class="text-gray-500 hover:text-neon"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </article>
+
+
+  <!-- POST 3: Farrah.Abreu — Coraline (CINEMA / TEXT) -->
+  <article class="glass rounded-2xl overflow-hidden section-reveal post-cinema" data-pillar="cinema">
+    <div class="p-5 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="ring-all profile-ring w-10 h-10"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[10px] font-bold">FA</div></div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-semibold">Farrah.Abreu</span>
+              <span class="mono text-[9px] px-1.5 py-0.5 border rounded" style="color:#FF1493;border-color:rgba(255,20,147,0.3)">Founder</span>
+              <span class="text-[9px] text-gray-600">2d ago</span>
+            </div>
+            <span class="mono text-[9px] tracking-wider px-1.5 py-0.5 border rounded" style="color:#FF1493;border-color:rgba(255,20,147,0.2)">CINEMA</span>
+          </div>
+        </div>
+        <button class="text-gray-600 hover:text-white"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+      </div>
+      <h2 class="text-xl md:text-2xl font-bold mb-1">Coraline</h2>
+      <p class="text-gray-400 text-sm italic mb-3">I want someone I know to watch this, so someone can dissect it with me</p>
+      <div class="flex items-center gap-1 mb-2">
+        <div class="rating-sq" style="background:#FF1493"></div><div class="rating-sq" style="background:#FF1493"></div><div class="rating-sq" style="background:#FF1493"></div><div class="rating-sq" style="background:rgba(255,255,255,0.1)"></div><div class="rating-sq" style="background:rgba(255,255,255,0.1)"></div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(255,20,147,0.6);background:rgba(255,20,147,0.05)">#stopmotion</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(255,20,147,0.6);background:rgba(255,20,147,0.05)">#gaiman</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(255,20,147,0.6);background:rgba(255,20,147,0.05)">#animation</span>
+      </div>
+      <div class="text-[13px] text-gray-400 leading-relaxed space-y-3 mb-4">
+        <p>There's something about the way the Other Mother's button eyes catch light that genuinely unsettles me every single rewatch. Selick understood that the uncanny valley isn't about making things look wrong -- it's about making them look <span class="text-white">almost right</span>.</p>
+        <p>The stop-motion texture adds this tactile dread that CGI could never replicate. Every frame took days to shoot and you can feel the labor -- which makes the whole thing feel more alive, paradoxically, than any digitally animated film.</p>
+        <p>The garden scene is genuinely one of the most beautiful sequences in animation history. And then the decay. The way the world literally unravels. That's not visual metaphor, it's <span class="text-white">emotional architecture</span>. I need someone to break this down scene by scene with me.</p>
+      </div>
+      <div class="flex items-center justify-between pt-3" style="border-top:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-5">
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white" onclick="toggleLike(this,412)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="text-[11px]">412</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="text-[11px]">23</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg><span class="text-[11px]">71</span></button>
+        </div>
+        <button class="text-gray-500 hover:text-neon"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+      </div>
+    </div>
+    <div style="border-top:1px solid rgba(255,255,255,0.05)" class="px-5 md:px-6 py-4 space-y-4">
+      <span class="text-[11px] text-gray-500">23 comments &middot; 6 audio replies</span>
+      <div class="relative">
+        <div class="thread-line" style="background:rgba(255,20,147,0.15)"></div>
+        <div class="flex gap-3">
+          <div class="ring-cinema-lit profile-ring w-8 h-8 flex-shrink-0 z-10"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[8px] font-bold">KJ</div></div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1.5"><span class="text-xs font-semibold">kai.jsx</span><span class="text-[9px] text-gray-600">1d ago</span></div>
+            <div class="rounded-lg p-3 mb-2" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+              <div class="flex items-center gap-3">
+                <button class="play-btn w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:#FF1493" data-audio="r4">
+                  <svg class="play-icon" width="9" height="9" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                  <svg class="pause-icon hidden" width="9" height="9" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                </button>
+                <div class="flex-1"><div class="flex items-end gap-[1.5px] h-5" id="wv-r4"></div></div>
+                <span class="mono text-[9px] text-gray-500">2:08</span>
+              </div>
+              <p class="text-[10px] text-gray-500 mt-2 italic">"Camera movement mirrors Coraline's emotional state -- wide and euphoric, then closes in. Same technique Kubrick used in The Shining."</p>
+            </div>
+            <div class="ml-8 flex gap-2.5">
+              <div class="ring-all profile-ring w-6 h-6 flex-shrink-0"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[7px] font-bold">FA</div></div>
+              <div><div class="flex items-center gap-2 mb-0.5"><span class="text-[11px] font-semibold">Farrah.Abreu</span><span class="text-[9px] text-gray-600">1d ago</span></div>
+              <p class="text-[11px] text-gray-400">THE KUBRICK COMPARISON. The hallway in the Other Mother's house IS the Overlook Hotel hallway. Someone finally gets it.</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <div class="ring-lit-music profile-ring w-8 h-8 flex-shrink-0"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[8px] font-bold">ML</div></div>
+        <div><div class="flex items-center gap-2 mb-1"><span class="text-xs font-semibold">mina.lit</span><span class="text-[9px] text-gray-600">20h ago</span></div>
+        <p class="text-[11px] text-gray-400">Have you read the Gaiman novella? The film makes the Other Mother MORE sympathetic -- in the book she's almost elemental, like hunger itself given form.</p></div>
+      </div>
+    </div>
+  </article>
+
+
+  <!-- POST 4: mina.lit — Yakuza Moon (LITERATURE / AUDIO) -->
+  <article class="glass rounded-2xl overflow-hidden section-reveal post-literature" data-pillar="literature">
+    <div class="p-5 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="ring-lit-music profile-ring w-10 h-10"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[10px] font-bold">ML</div></div>
+          <div>
+            <div class="flex items-center gap-2"><span class="text-sm font-semibold">mina.lit</span><span class="text-[9px] text-gray-600">1d ago</span></div>
+            <span class="mono text-[9px] tracking-wider px-1.5 py-0.5 border rounded" style="color:#B8001C;border-color:rgba(184,0,28,0.2)">LITERATURE</span>
+          </div>
+        </div>
+        <button class="text-gray-600 hover:text-white"><svg width="15" height="15" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+      </div>
+      <h2 class="text-xl md:text-2xl font-bold mb-1">Yakuza Moon — Shoko Tendo</h2>
+      <p class="text-gray-400 text-sm italic mb-3">She writes pain like it's a language she invented</p>
+      <div class="flex items-center gap-1 mb-2">
+        <div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:#B8001C"></div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(184,0,28,0.6);background:rgba(184,0,28,0.05)">#memoir</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(184,0,28,0.6);background:rgba(184,0,28,0.05)">#yakuza</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(184,0,28,0.6);background:rgba(184,0,28,0.05)">#japanese</span>
+      </div>
+      <div class="rounded-xl p-4 mb-4" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-4">
+          <button class="play-btn w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 hover:scale-105 transition-transform" style="background:#B8001C" data-audio="4">
+            <svg class="play-icon" width="14" height="14" fill="#fff" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+            <svg class="pause-icon hidden" width="14" height="14" fill="#fff" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+          </button>
+          <div class="flex-1">
+            <div class="waveform relative flex items-end gap-[2px] h-8 cursor-pointer" data-audio="4">
+              <div class="absolute inset-0 flex items-end gap-[2px]" id="waveform-4"></div>
+            </div>
+            <div class="flex justify-between mt-1.5">
+              <span class="mono text-[10px] text-gray-500">0:00</span>
+              <span class="mono text-[10px] text-gray-500">3:28</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] text-gray-500 mt-3 italic">"There's a chapter where she reads her father's arrest report. You can hear she's read it a thousand times and it still destroys her."</p>
+      </div>
+      <div class="flex items-center justify-between pt-3" style="border-top:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-5">
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white" onclick="toggleLike(this,189)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="text-[11px]">189</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="text-[11px]">5</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg><span class="text-[11px]">28</span></button>
+        </div>
+        <button class="text-gray-500 hover:text-neon"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+      </div>
+    </div>
+  </article>
+
+
+  <!-- POST 5: Farrah — Call Me by Your Name (LITERATURE / TEXT / EDITED) -->
+  <article class="glass rounded-2xl overflow-hidden section-reveal post-literature" data-pillar="literature">
+    <div class="p-5 md:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="ring-all profile-ring w-10 h-10"><div class="w-full h-full rounded-full bg-deep flex items-center justify-center text-[10px] font-bold">FA</div></div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-semibold">Farrah.Abreu</span>
+              <span class="mono text-[9px] px-1.5 py-0.5 border rounded" style="color:#FF1493;border-color:rgba(255,20,147,0.3)">Founder</span>
+              <span class="text-[9px] text-gray-600">5d ago</span>
+              <span class="mono text-[9px] text-gray-600 italic">edited &middot; Mar 28, 2026 3:41pm</span>
+            </div>
+            <span class="mono text-[9px] tracking-wider px-1.5 py-0.5 border rounded" style="color:#B8001C;border-color:rgba(184,0,28,0.2)">LITERATURE</span>
+          </div>
+        </div>
+      </div>
+      <h2 class="text-xl md:text-2xl font-bold mb-1">Call Me by Your Name</h2>
+      <p class="text-gray-400 text-sm italic mb-3">A fitting footnote to Elio and Oliver's story</p>
+      <div class="flex items-center gap-1 mb-2">
+        <div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:#B8001C"></div><div class="rating-sq" style="background:rgba(255,255,255,0.1)"></div><div class="rating-sq" style="background:rgba(255,255,255,0.1)"></div>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-4">
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(184,0,28,0.6);background:rgba(184,0,28,0.05)">#aciman</span>
+        <span class="mono text-[9px] rounded px-2 py-0.5" style="color:rgba(184,0,28,0.6);background:rgba(184,0,28,0.05)">#longing</span>
+      </div>
+      <p class="text-[13px] text-gray-400 leading-relaxed mb-4">Achingly beautiful. Aciman writes longing like it's a physical sensation -- you feel the Italian heat, the weight of unspoken things, the way memory distorts time until you can't tell if you're remembering something or imagining what could have been.</p>
+      <div class="flex items-center justify-between pt-3" style="border-top:1px solid rgba(255,255,255,0.05)">
+        <div class="flex items-center gap-5">
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white" onclick="toggleLike(this,334)"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg><span class="text-[11px]">334</span></button>
+          <button class="flex items-center gap-1.5 text-gray-500 hover:text-white"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg><span class="text-[11px]">112</span></button>
+        </div>
+        <button class="text-gray-500 hover:text-neon"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg></button>
+      </div>
+    </div>
+  </article>
+
+  <!-- YOU'RE CAUGHT UP -->
+  <div class="caught-up section-reveal">
+    <div class="w-16 h-px mx-auto mb-4" style="background:linear-gradient(90deg,transparent,rgba(57,255,20,0.3),transparent)"></div>
+    <p class="text-sm text-gray-500">You're all caught up</p>
+    <p class="text-[10px] text-gray-700 mt-1">You've seen all new posts from people you follow</p>
+    <div class="w-16 h-px mx-auto mt-4" style="background:linear-gradient(90deg,transparent,rgba(57,255,20,0.3),transparent)"></div>
+  </div>
+
+</main>
+
+
+<!-- RECORDING MODAL -->
+<div id="record-modal" class="fixed inset-0 z-[100] hidden">
+  <div class="absolute inset-0" style="background:rgba(0,0,0,0.92);backdrop-filter:blur(16px)"></div>
+  <div class="relative z-10 flex flex-col items-center justify-center h-full px-6">
+    <button id="close-record" class="absolute top-6 right-6 text-gray-400 hover:text-white">
+      <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+
+    <p class="mono text-xs tracking-[0.3em] uppercase mb-1" style="color:rgba(57,255,20,0.6)">Record Audio Review</p>
+    <p class="mono text-[10px] text-gray-600 mb-8">Max 7 min &middot; Min 7 sec &middot; AI silence detection (3.5s)</p>
+
+    <div class="mono text-5xl text-white mb-8 tabular-nums" id="record-timer">0:00</div>
+
+    <div class="flex items-center gap-1 h-16 mb-8" id="live-waveform"></div>
+
+    <button id="record-btn" class="w-20 h-20 rounded-full flex items-center justify-center mb-4 recording-ring" style="background:#EF4444">
+      <div class="w-6 h-6 rounded-full bg-white recording-dot" id="record-dot"></div>
+    </button>
+    <p class="mono text-[11px] text-gray-500">Hold to record &middot; Tap to toggle</p>
+
+    <div id="post-record-controls" class="hidden mt-8 space-y-4 w-full max-w-sm">
+      <div class="flex items-center gap-3 justify-center">
+        <button class="mono text-xs text-gray-400 border border-white/10 rounded-lg px-4 py-2">Discard</button>
+        <button class="mono text-xs text-neon border rounded-lg px-4 py-2" style="border-color:rgba(57,255,20,0.3)">Preview</button>
+        <button class="mono text-xs text-black font-semibold rounded-lg px-6 py-2 hover:bg-white transition" style="background:#39FF14">Trim & Post</button>
+      </div>
+      <input type="text" placeholder="Title (required)" class="w-full rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)" />
+      <input type="text" placeholder="Subtitle (optional, max 120 chars)" class="w-full rounded-lg px-3 py-2 text-xs text-white placeholder-gray-600 focus:outline-none" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1)" maxlength="120" />
+      <div class="flex gap-2">
+        <button class="mono text-[10px] border rounded px-3 py-1.5" style="color:#FF1493;border-color:rgba(255,20,147,0.3)">Cinema</button>
+        <button class="mono text-[10px] border rounded px-3 py-1.5" style="color:#39FF14;border-color:rgba(57,255,20,0.3)">Music</button>
+        <button class="mono text-[10px] border rounded px-3 py-1.5" style="color:#8B5CF6;border-color:rgba(139,92,246,0.3)">Fashion</button>
+        <button class="mono text-[10px] border rounded px-3 py-1.5" style="color:#B8001C;border-color:rgba(184,0,28,0.3)">Literature</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="mono text-[10px] text-gray-500">Rating:</span>
+        <div class="flex gap-1" id="rating-picker">
+          <div class="rating-sq cursor-pointer" style="background:rgba(255,255,255,0.1)" onclick="setRating(1)"></div>
+          <div class="rating-sq cursor-pointer" style="background:rgba(255,255,255,0.1)" onclick="setRating(2)"></div>
+          <div class="rating-sq cursor-pointer" style="background:rgba(255,255,255,0.1)" onclick="setRating(3)"></div>
+          <div class="rating-sq cursor-pointer" style="background:rgba(255,255,255,0.1)" onclick="setRating(4)"></div>
+          <div class="rating-sq cursor-pointer" style="background:rgba(255,255,255,0.1)" onclick="setRating(5)"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MINI PLAYER -->
+<div id="mini-player" class="fixed bottom-0 left-0 right-0 z-40 hidden mini-player">
+  <div class="px-4 py-3" style="background:rgba(10,10,10,0.96);border-top:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px)">
+    <div class="max-w-4xl mx-auto flex items-center gap-4">
+      <button class="play-btn w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style="background:#39FF14" id="mini-play">
+        <svg class="play-icon" width="11" height="11" fill="#000" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+        <svg class="pause-icon hidden" width="11" height="11" fill="#000" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-medium truncate" id="mini-title">Elvis -- '68 Comeback Special</p>
+        <p class="mono text-[10px] text-gray-500 truncate" id="mini-author">dante.vinyl</p>
+      </div>
+      <div class="flex-1 hidden sm:block">
+        <div class="h-1 rounded-full overflow-hidden" style="background:rgba(255,255,255,0.1)">
+          <div class="h-full rounded-full transition-all" id="mini-progress" style="width:35%;background:#39FF14"></div>
+        </div>
+      </div>
+      <span class="mono text-[10px] text-gray-500 tabular-nums">1:23 / 4:47</span>
+      <button id="autoplay-btn" class="mono text-[9px] rounded px-2 py-1 border transition" style="color:#666;border-color:rgba(255,255,255,0.1)" title="Auto-play thread">Auto</button>
+      <button id="close-mini" class="text-gray-500 hover:text-white">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // WAVEFORM GEN
+  function genWave(id, count, color, maxH = 28) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const b = document.createElement('div');
+      b.className = 'wave-bar';
+      b.style.cssText = `width:3px;height:${Math.random()*maxH+4}px;background:${i/count < 0.35 ? color : 'rgba(255,255,255,0.12)'};flex-shrink:0`;
+      el.appendChild(b);
+    }
+  }
+  genWave('waveform-1', 58, '#39FF14');
+  genWave('waveform-2', 58, '#8B5CF6');
+  genWave('waveform-4', 58, '#B8001C');
+  genWave('wv-r1', 40, '#FF1493', 18);
+  genWave('wv-r1b', 35, '#FF1493', 14);
+  genWave('wv-r2', 40, '#FF1493', 18);
+  genWave('wv-r3', 35, '#8B5CF6', 14);
+  genWave('wv-r4', 40, '#FF1493', 18);
+
+  // PLAY BUTTONS
+  // Expressive scripts — written for TTS rhythm: short punchy sentences, natural pauses via punctuation
+  const audioScripts = {
+    // dante.vinyl — male, soulful music obsessive
+    '1': "Okay. There is a moment. Right at the start. Elvis walks out in that black leather suit, and the entire room just... stops. Like someone hit pause on the world. By 1968, everybody had written this man off. Hollywood movies, formulaic garbage. The Beatles happened. Hendrix happened. Elvis was practically a punchline. And then he walked out in that suit and said: watch this. What kills me is the intimacy. It's not a stadium. It's a tiny stage, almost in the round. He is right there. He's not performing at them. He's performing with them. And then, If I Can Dream. Oh god. The way his voice cracks open on that first note. 1968. After King. After Kennedy. This is a man pouring every single thing he has into one moment, because the world is falling apart and he needs you to know he is still here. No safety net. No second take. That is why it is immortal.",
+    // suki.knit — female, precise fashion analyst, building tension
+    '2': "Picture this. You walk into the venue, and the entire stage is a single mirrored box. Floor to ceiling. And you cannot see inside. But you can absolutely see yourself. That is already a statement. McQueen understood something most designers never grasp, the show is the collection. The clothes are the punctuation, not the sentence. When those mirrors finally go transparent, one-way glass, the models appear. But think about it. Who is being watched? Who is the specimen here? And then. The finale. The box shatters. And there is Michelle Olley, breathing apparatus, surrounded by live moths. Live! It is Joel-Peter Witkin's Sanitarium made flesh. That is not fashion week. That is an event. That is VOSS.",
+    // mina.lit — female, slow & literary, raw emotional weight
+    '4': "Shoko Tendo writes pain like it is a language she invented. Every sentence earns its place. There is a chapter, where she reads her father's arrest report aloud. You can feel that she has read it hundreds of times. And it still... destroys her. That is what great memoir does. It takes you inside someone's reckoning with the life they were handed. The tattoos, the violence, the loyalty, and the brutal cost of that loyalty. She does not explain herself, she does not apologize. She just tells it straight. And somehow that restraint, that restraint, is what makes it hit so hard. Five stars. No question.",
+    // kai.jsx — male, fast & excited cinephile
+    'r1': "The intimacy point is everything, right? Like, Binder shot this thing like Cassavetes. Handheld chaos. All faces, no spectacle. You are in the room with him.",
+    'r1b': "Exactly, and that is what makes it feel genuinely dangerous. You do not know if he is going to hold it together. That uncertainty IS the performance. That is the whole thing.",
+    // raya.m — female, assertive & punchy, fashion-first
+    'r2': "That leather suit is the comeback. Full stop. The fashion is the statement. Before he sang one note, that suit told you everything. He looked like he was going to war.",
+    // suki.knit reply — female, crisp expertise
+    'r3': "Bill Belew designed that suit, and it was intentional in every detail. Napoleon collar, perfect fit, military precision meets pure rebellion. That exact silhouette gets referenced on the runway still. Every fashion week, someone quotes it.",
+    // kai.jsx — male, analytical & enthusiastic
+    'r4': "The camera work is doing so much heavy lifting in this film. It literally mirrors Coraline's emotional state. Wide and euphoric when she is in the Other World, then it closes in, gets claustrophobic, starts suffocating you. Same technique Kubrick used in The Shining. Selick studied that film obsessively and it shows."
+  };
+
+  // Per-character voice profiles: gender preference + expressive tuning
+  const voiceProfiles = {
+    '1':   { gender: 'male',    rate: 0.87, pitch: 0.90 }, // dante — soulful, deliberate
+    '2':   { gender: 'female',  rate: 0.92, pitch: 1.08 }, // suki — precise, rising
+    '4':   { gender: 'female',  rate: 0.80, pitch: 0.85 }, // mina — slow, heavy, raw
+    'r1':  { gender: 'male',    rate: 1.06, pitch: 1.15 }, // kai — fast, pumped
+    'r1b': { gender: 'male',    rate: 1.02, pitch: 1.10 }, // kai nested
+    'r2':  { gender: 'female',  rate: 1.10, pitch: 1.02 }, // raya — confident, punchy
+    'r3':  { gender: 'female',  rate: 0.96, pitch: 1.12 }, // suki reply — crisp
+    'r4':  { gender: 'male',    rate: 1.04, pitch: 1.12 }, // kai — analytical energy
+  };
+
+  // Preferred voice names by gender (ordered by quality)
+  const preferredMale   = ['Daniel', 'Google UK English Male', 'Aaron', 'Tom', 'Alex', 'Fred', 'Ralph'];
+  const preferredFemale = ['Samantha', 'Karen', 'Google UK English Female', 'Tessa', 'Moira', 'Victoria', 'Fiona'];
+
+  let voicesReady = false, voiceCache = {};
+  function loadVoices() {
+    const all = speechSynthesis.getVoices();
+    if (!all.length) return;
+    voicesReady = true;
+    // Build a name→voice map
+    all.forEach(v => { voiceCache[v.name] = v; });
+  }
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices(); // immediate call (Chromium already has voices)
+
+  function pickVoice(gender) {
+    const preferred = gender === 'male' ? preferredMale : preferredFemale;
+    for (const name of preferred) {
+      if (voiceCache[name]) return voiceCache[name];
+    }
+    // Fallback: scan by language + gender hint in name
+    const all = speechSynthesis.getVoices();
+    const enVoices = all.filter(v => v.lang.startsWith('en'));
+    const genderHint = gender === 'male' ? /male|man/i : /female|woman|girl/i;
+    const byHint = enVoices.find(v => genderHint.test(v.name));
+    if (byHint) return byHint;
+    // Last resort: alternate by gender to at least mix them
+    return enVoices[gender === 'male' ? 0 : 1] || enVoices[0] || null;
+  }
+
+  let current = null, currentUtterance = null, autoplay = false;
+
+  function stopSpeech() {
+    if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+    currentUtterance = null;
+  }
+
+  function resetBtn(btn) {
+    if (!btn) return;
+    btn.querySelector('.play-icon').classList.remove('hidden');
+    btn.querySelector('.pause-icon').classList.add('hidden');
+  }
+
+  function speakFor(id, onEnd) {
+    stopSpeech();
+    const text = audioScripts[id];
+    if (!text) return;
+    const profile = voiceProfiles[id] || { gender: 'female', rate: 0.95, pitch: 1.0 };
+    const u = new SpeechSynthesisUtterance(text);
+    const voice = pickVoice(profile.gender);
+    if (voice) u.voice = voice;
+    u.rate   = profile.rate;
+    u.pitch  = profile.pitch;
+    u.volume = 1;
+    u.onend  = onEnd || null;
+    u.onerror = onEnd || null;
+    currentUtterance = u;
+    speechSynthesis.speak(u);
+  }
+
+  document.querySelectorAll('.play-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = this.dataset.audio;
+      const pi = this.querySelector('.play-icon'), pa = this.querySelector('.pause-icon');
+      const isPlaying = pi.classList.contains('hidden');
+
+      // Stop previous button if different
+      if (current && current !== this) { resetBtn(current); }
+
+      if (isPlaying) {
+        // Pause → stop speech and reset
+        stopSpeech();
+        pi.classList.remove('hidden'); pa.classList.add('hidden');
+        current = null;
+        document.getElementById('mini-player').classList.add('hidden');
+      } else {
+        // Play
+        pi.classList.add('hidden'); pa.classList.remove('hidden');
+        current = this;
+
+        const titles = {'1':"Elvis — '68 Comeback Special",'2':'McQueen — VOSS SS 2001','4':'Yakuza Moon — Shoko Tendo'};
+        const authors = {'1':'dante.vinyl','2':'suki.knit','4':'mina.lit'};
+        if (titles[id]) {
+          document.getElementById('mini-title').textContent = titles[id];
+          document.getElementById('mini-author').textContent = authors[id];
+          document.getElementById('mini-player').classList.remove('hidden');
+          let p = 35; const bar = document.getElementById('mini-progress');
+          const iv = setInterval(()=>{ if(!current){clearInterval(iv);return;} p+=0.2; if(p>100)p=0; bar.style.width=p+'%'; },100);
+        }
+
+        const self = this;
+        speakFor(id, () => {
+          // Auto-reset when speech ends naturally
+          if (current === self) {
+            resetBtn(self);
+            current = null;
+            document.getElementById('mini-player').classList.add('hidden');
+          }
+        });
+      }
+    });
+  });
+
+  document.getElementById('mini-play').addEventListener('click', function(){
+    const pi = this.querySelector('.play-icon'), pa = this.querySelector('.pause-icon');
+    const isPlaying = pi.classList.contains('hidden');
+    if (isPlaying) {
+      // Pause
+      speechSynthesis.pause();
+      pi.classList.remove('hidden'); pa.classList.add('hidden');
+    } else {
+      // Resume
+      speechSynthesis.resume();
+      pi.classList.add('hidden'); pa.classList.remove('hidden');
+    }
+  });
+  document.getElementById('close-mini').addEventListener('click', ()=>{
+    document.getElementById('mini-player').classList.add('hidden');
+    stopSpeech();
+    if(current){ resetBtn(current); current = null; }
+  });
+  document.getElementById('autoplay-btn').addEventListener('click', function(){
+    autoplay=!autoplay;
+    this.style.color = autoplay ? '#39FF14' : '#666';
+    this.style.borderColor = autoplay ? 'rgba(57,255,20,0.4)' : 'rgba(255,255,255,0.1)';
+  });
+
+  // TABS
+  function switchTab(el) {
+    el.parentElement.querySelectorAll('button').forEach(b=>{ b.classList.remove('tab-active'); b.classList.add('text-gray-500'); });
+    el.classList.add('tab-active'); el.classList.remove('text-gray-500');
+  }
+
+  // CATEGORY FILTER
+  function toggleFilter(el, pillar) {
+    el.classList.toggle('active'); el.classList.toggle('inactive');
+    const active = [...document.querySelectorAll('.filter-pill.active')].map(p => p.onclick.toString().match(/'(\w+)'/)[1]);
+    document.querySelectorAll('[data-pillar]').forEach(p => { p.style.display = active.includes(p.dataset.pillar) ? '' : 'none'; });
+  }
+
+  // SPEED
+  document.querySelectorAll('.speed-btn').forEach(btn => {
+    btn.addEventListener('click', function(){
+      this.closest('.flex').querySelectorAll('.speed-btn').forEach(b=>{ b.classList.remove('active'); b.style.color=''; b.style.borderColor=''; });
+      this.classList.add('active'); this.style.color='#39FF14'; this.style.borderColor='rgba(57,255,20,0.5)';
+    });
+  });
+
+  // WAVEFORM CLICK
+  document.querySelectorAll('.waveform').forEach(wv => {
+    wv.addEventListener('click', function(e){
+      const p = (e.clientX - this.getBoundingClientRect().left) / this.getBoundingClientRect().width;
+      const bars = this.querySelector('[id^="waveform-"]')?.querySelectorAll('.wave-bar');
+      if (!bars) return;
+      const c = this.dataset.audio==='1'?'#39FF14':this.dataset.audio==='2'?'#8B5CF6':'#B8001C';
+      bars.forEach((b,i)=>{ b.style.background = i/bars.length < p ? c : 'rgba(255,255,255,0.12)'; });
+    });
+  });
+
+  // RECORDING MODAL
+  let isRec=false, secs=0, iv2=null;
+  document.getElementById('open-record-modal').addEventListener('click', ()=>{ document.getElementById('record-modal').classList.remove('hidden'); buildLiveWave(); });
+  document.getElementById('close-record').addEventListener('click', ()=>{ document.getElementById('record-modal').classList.add('hidden'); clearInterval(iv2); isRec=false; secs=0; document.getElementById('record-timer').textContent='0:00'; document.getElementById('post-record-controls').classList.add('hidden'); });
+  document.getElementById('record-btn').addEventListener('click', ()=>{
+    isRec=!isRec; const dot=document.getElementById('record-dot');
+    if(isRec){ dot.style.cssText='width:20px;height:20px;border-radius:4px;background:#fff'; iv2=setInterval(()=>{ secs++; document.getElementById('record-timer').textContent=`${Math.floor(secs/60)}:${(secs%60).toString().padStart(2,'0')}`; },1000); }
+    else { dot.style.cssText='width:24px;height:24px;border-radius:50%;background:#fff'; clearInterval(iv2); if(secs>=7) document.getElementById('post-record-controls').classList.remove('hidden'); }
+  });
+  function buildLiveWave(){
+    const c=document.getElementById('live-waveform'); c.innerHTML='';
+    for(let i=0;i<28;i++){ const b=document.createElement('div'); b.className='wave-bar wave-bar-animated'; b.style.cssText=`width:4px;background:#39FF14;opacity:0.4;height:8px;flex-shrink:0`; b.style.setProperty('--max-h',(Math.random()*44+8)+'px'); b.style.animationDelay=(Math.random()*0.5)+'s'; c.appendChild(b); }
+  }
+
+  // RATING
+  function setRating(n){ document.querySelectorAll('#rating-picker .rating-sq').forEach((s,i)=>{ s.style.background=i<n?'#39FF14':'rgba(255,255,255,0.1)'; }); }
+
+  // LIKE TOGGLE
+  function toggleLike(btn, base){ const liked=btn.dataset.liked==='1'; btn.dataset.liked=liked?'0':'1'; const svg=btn.querySelector('svg'); const span=btn.querySelector('span'); svg.style.fill=liked?'none':'#FF1493'; svg.style.stroke=liked?'currentColor':'#FF1493'; span.textContent=liked?base:base+1; }
+
+  // SECTION REVEAL
+  const obs=new IntersectionObserver(e=>e.forEach(x=>{ if(x.isIntersecting) x.target.classList.add('visible'); }),{threshold:0.05});
+  document.querySelectorAll('.section-reveal').forEach(s=>obs.observe(s));
+</script>
+</body>
+</html>

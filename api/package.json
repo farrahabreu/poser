@@ -1,0 +1,25 @@
+{
+  "name": "poser-api",
+  "version": "1.0.0",
+  "description": "POSER social platform API",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --experimental-sqlite server.js",
+    "dev": "node --experimental-sqlite --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.5",
+    "twilio": "^5.13.1",
+    "uuid": "^10.0.0",
+    "web-push": "^3.6.7",
+    "ws": "^8.17.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "POSER Site",
+      "runtimeExecutable": "/Users/wilmerabreu/.nvm/versions/node/v24.14.1/bin/node",
+      "runtimeArgs": ["/Users/wilmerabreu/Desktop/poser/site/server.js"],
+      "port": 8080
+    },
+    {
+      "name": "POSER API",
+      "runtimeExecutable": "/Users/wilmerabreu/.nvm/versions/node/v24.14.1/bin/node",
+      "runtimeArgs": ["--experimental-sqlite", "/Users/wilmerabreu/Desktop/poser/api/server.js"],
+      "port": 3001
+    }
+  ]
+}
