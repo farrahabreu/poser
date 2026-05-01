@@ -1,0 +1,15 @@
+{
+  "name": "Poser",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [8080, 3001],
+  "portsAttributes": {
+    "8080": {
+      "label": "Poser Site",
+      "onAutoForward": "openBrowserOnce"
+    },
+    "3001": {
+      "label": "Poser API",
+      "onAutoForward": "silent"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+services:
+  poser-api:
+    name: Poser API
+    description: Express back-end on port 3001
+    commands:
+      start: cd /workspaces/workspaces/poser/api && npm install --silent && node --experimental-sqlite server.js
+      ready: curl -sf http://localhost:3001/api/v1/health
+
+  poser-site:
+    name: Poser Site
+    description: Static front-end on port 8080
+    commands:
+      start: cd /workspaces/workspaces/poser/site && node server.js
+      ready: curl -sf http://localhost:8080
