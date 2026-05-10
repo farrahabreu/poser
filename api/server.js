@@ -19,13 +19,13 @@ const modRouter      = require('./routes/moderation');
 const trackingRouter = require('./routes/tracking');
 const wrappedRouter  = require('./routes/wrapped');
 
-const PORT   = parseInt(process.env.PORT || '3001', 10);
-const ORIGIN = process.env.ALLOWED_ORIGIN || 'http://localhost:8080';
+const PORT   = parseInt(process.env.PORT || '8080', 10);
+const ORIGIN = process.env.ALLOWED_ORIGIN || `http://localhost:${process.env.PORT || '8080'}`;
 
 const app = express();
 
 app.use(cors({
-  origin:      [ORIGIN, 'http://localhost:8080', 'http://127.0.0.1:8080'],
+  origin:      true,
   credentials: true,
   methods:     ['GET','POST','PATCH','PUT','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
@@ -38,6 +38,10 @@ app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 // Serve uploaded files
 const UPLOAD_DIR = path.resolve(__dirname, process.env.UPLOAD_DIR || './uploads');
 app.use('/uploads', express.static(UPLOAD_DIR));
+
+// Serve frontend static files
+const SITE_DIR = path.resolve(__dirname, '../site');
+app.use(express.static(SITE_DIR));
 
 // Health check
 app.get('/api/v1/health', (req, res) => {
@@ -66,8 +70,13 @@ if (process.env.NODE_ENV !== 'production') {
   app.use('/api/v1/dev', require('./routes/dev'));
 }
 
-// 404 handler
-app.use((req, res) => res.status(404).json({ error: 'Not found' }));
+// Catch-all: serve index.html for any non-API route (SPA fallback)
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  res.sendFile(path.join(SITE_DIR, 'index.html'));
+});
 
 // Error handler
 app.use((err, req, res, next) => {
